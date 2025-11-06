@@ -3,20 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LuxChat — Private Local Chat</title>
+  <title>WhatsApp‑style Local Chat</title>
   <style>
-    :root{
-      --bg: #0b0f1a;
-      --panel: #0f172aee;
-      --panel-2: #0b1222cc;
-      --text: #e6e9ef;
-      --muted: #98a2b3;
-      --brand: linear-gradient(135deg,#7c3aed,#4f46e5,#06b6d4);
-      --accent: #7c3aed;
-      --ok: #22c55e; --warn:#f59e0b; --err:#ef4444;
-      --blur: 14px;
-      --radius: 18px;
-    }
+    :root{--bg:#0a1014;--wa-green:#075E54;--wa-green-dark:#06453f;--wa-accent:#128C7E;--wa-chat:#DCF8C6;--panel:#0e151aee;--text:#e8edf1;--muted:#9fb0c9;--radius:18px;--blur:14px;}
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -40,82 +29,79 @@
       border-radius: var(--radius);
     }
 
-    /* Auth */
-    .auth{
-      display:grid; grid-template-columns: 1.2fr 1fr; gap:20px; padding:18px;
-    }
-    .hero{ position:relative; overflow:hidden; border-radius: var(--radius);}
-    .hero::before{
-      content:""; position:absolute; inset:0; background:var(--brand); filter: blur(60px); opacity:.35;
-    }
-    .hero-inner{ position:relative; padding:28px; height:100%; display:grid; align-content:space-between; }
-    .logo{display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.5px}
-    .logo-badge{
-      width:42px; height:42px; border-radius:12px; background:var(--brand);
-      box-shadow: inset 0 1px 0 #fff8, 0 10px 30px #0006;
-    }
-    .tagline{color:#cbd5e1; line-height:1.4}
-    .pill{
-      display:inline-flex; align-items:center; gap:8px; font-size:12px; padding:8px 12px; border-radius:999px; background:#0ea5e922; border:1px solid #38bdf86e;
-    }
+    /*/* Auth */
+    .auth{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;padding:18px}
+    .hero{position:relative;overflow:hidden;border-radius:var(--radius);background:linear-gradient(135deg,#06453f,#075E54,#128C7E)}
+    .hero-inner{position:relative;padding:28px;height:100%;display:grid;align-content:space-between}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.5px}
+    .logo-badge{width:42px;height:42px;border-radius:12px;background:#fff1;box-shadow:inset 0 1px 0 #fff6,0 10px 30px #0006}
+    .tagline{color:#d9ebe7;line-height:1.5}
+    .pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;padding:8px 12px;border-radius:999px;background:#ffffff14;border:1px solid #ffffff3a}
 
-    .auth-panel{ padding:24px; display:grid; gap:14px }
-    .tabs{ display:flex; background:#0b1222aa; border-radius:12px; padding:6px; border:1px solid #243453; }
-    .tab{ flex:1; text-align:center; padding:10px 12px; border-radius:10px; cursor:pointer; user-select:none; color:var(--muted)}
-    .tab.active{ background:linear-gradient(180deg,#121c35,#0e1730); color:var(--text); border:1px solid #223356 }
+    .auth-panel{padding:24px;display:grid;gap:14px}
+    .tabs{display:flex;background:#0b1222aa;border-radius:12px;padding:6px;border:1px solid #1e2e33}
+    .tab{flex:1;text-align:center;padding:10px 12px;border-radius:10px;cursor:pointer;user-select:none;color:var(--muted)}
+    .tab.active{background:#0e1b1e;color:var(--text);border:1px solid #1e2e33}
 
-    .field{ display:grid; gap:8px }
-    .field label{ font-size:12px; color:#b7c0cf } 
-    .input{ width:100%; background:#0b1222; border:1px solid #243453; color:var(--text); border-radius:12px; padding:12px 14px; outline:none }
-    .input:focus{ border-color:#475d8a; box-shadow:0 0 0 3px #3b82f61a }
+    .field{display:grid;gap:8px}
+    .field label{font-size:12px;color:#b7c0cf}
+    .input{width:100%;background:#0b1214;border:1px solid #1e2e33;color:var(--text);border-radius:12px;padding:12px 14px;outline:none}
+    .input:focus{border-color:#128C7E;box-shadow:0 0 0 3px #128C7E1e}
 
-    .btn{ cursor:pointer; border:0; border-radius:12px; padding:12px 14px; color:white; font-weight:700; letter-spacing:.3px; background:var(--brand); box-shadow: 0 10px 25px #0007 }
-    .btn.secondary{ background:#0b1222; border:1px solid #223356; color:#d5def0; font-weight:600 }
-    .row{ display:flex; gap:12px; align-items:center }
-    .help{ font-size:12px; color:#9fb0c9 }
-    .tiny{ font-size:11px; color:#95a2b8 }
+    .btn{cursor:pointer;border:0;border-radius:12px;padding:12px 14px;color:white;font-weight:700;letter-spacing:.3px;background:#128C7E;box-shadow:0 10px 25px #0007}
+    .btn.secondary{background:#0b1214;border:1px solid #1e2e33;color:#d5def0;font-weight:600}
+    .row{display:flex;gap:12px;align-items:center}
+    .help{font-size:12px;color:#9fb0c9}
+    .tiny{font-size:11px;color:#95a2b8}
 
-    /* App */
-    .app{ display:grid; grid-template-columns: 300px 1fr; gap:16px; padding:16px; height:100% }
-    .sidebar{ display:grid; grid-template-rows: auto 1fr auto; gap:12px; padding:14px }
-    .me{ display:flex; align-items:center; gap:12px; padding:10px; border-radius:12px; background:linear-gradient(180deg,#101a33,#0d152b); border:1px solid #223356 }
-    .me .avatar{ width:36px; height:36px; border-radius:12px; background:var(--brand) }
-    .me .name{ font-weight:700 }
+    /*/* App */
+    .app{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px;height:100%}
+    .sidebar{display:grid;grid-template-rows:auto 52px 1fr auto;gap:12px;padding:0;border-radius:var(--radius);overflow:hidden}
+    .wa-topbar{background:#075E54;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+    .wa-title{font-weight:800}
+    .wa-icons{opacity:.85}
 
-    .search{ position:relative }
-    .search input{ width:100%; padding:12px 12px 12px 36px; border-radius:12px; background:#0b1222; border:1px solid #243453; color:var(--text) }
-    .search svg{ position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:.6 }
+    .search{background:#0b1214;border-top:1px solid #0f2327;border-bottom:1px solid #0f2327;padding:8px}
+    .search input{width:100%;padding:10px 12px 10px 36px;border-radius:20px;background:#0f1a1d;border:1px solid #173035;color:var(--text)}
+    .search svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);opacity:.6}
 
-    .threads{ display:grid; gap:8px; overflow:auto; padding-right:6px }
-    .thread{ display:flex; gap:10px; padding:10px; border-radius:12px; background:#0b1222; border:1px solid #243453; cursor:pointer }
-    .thread.active{ outline:2px solid #4f46e5aa }
-    .thread .icon{ width:34px; height:34px; border-radius:10px; background:#111c37; display:grid; place-items:center }
-    .thread .meta{ display:grid }
-    .thread .meta .title{ font-weight:700 }
-    .thread .meta .last{ color:#9fb0c9; font-size:12px }
+    .threads{display:grid;gap:0;overflow:auto}
+    .thread{display:flex;gap:12px;padding:12px;border-bottom:1px solid #0f2327;background:#0b1214;cursor:pointer}
+    .thread:hover{background:#0f171a}
+    .thread.active{background:#0f171a;outline:none}
+    .avatar{width:42px;height:42px;border-radius:50%;background:#173035;display:grid;place-items:center;font-weight:700}
+    .thread .meta{display:grid}
+    .thread .meta .title{font-weight:700}
+    .thread .meta .last{color:#9fb0c9;font-size:12px}
 
-    .room{
-      display:grid; grid-template-rows: auto 1fr auto; height:100%; overflow:hidden; border-radius:var(--radius); border:1px solid #243453;
-      background:linear-gradient(180deg,#0f172acc,#0b1222ee);
-    }
-    .room-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #223356 }
-    .room-head .title{ font-weight:800; letter-spacing:.4px }
-    .room-head .badge{ font-size:12px; color:#a6b4cc; background:#0ea5e922; border:1px solid #38bdf86e; padding:6px 10px; border-radius:999px }
+    .room{display:grid;grid-template-rows:auto 1fr auto; height:100%; overflow:hidden; border-radius:var(--radius); border:1px solid #0f2327; background:#0b1214}
+    .room-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#075E54;border-bottom:1px solid #06453f}
+    .room-head .title{font-weight:800;letter-spacing:.2px}
+    .room-head .badge{font-size:12px;color:#e8f7f2;background:#ffffff22;border:1px solid #ffffff3a;padding:6px 10px;border-radius:999px}
 
-    .chat{ padding:16px; overflow:auto; display:flex; flex-direction:column; gap:10px }
+    .chat{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"220\" height=\"220\" viewBox=\"0 0 220 220\" opacity=\"0.06\"><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"white\"/></svg>') repeat}
 
-    .msg{ max-width:78%; padding:12px 14px; border-radius:16px; border:1px solid #223356; background:#0b1222; position:relative }
-    .msg.me{ margin-left:auto; background:linear-gradient(180deg,#1b2544,#121c35); border-color:#2f3f64 }
-    .msg .time{ font-size:11px; color:#9fb0c9; margin-top:6px; text-align:right }
+    .msg{max-width:74%;padding:8px 10px;border-radius:16px;border:1px solid #0f2327;background:#111b1e;position:relative}
+    .msg.me{margin-left:auto;background:#DCF8C6;color:#082b1f;border-color:#c6e8b2}
+    .msg .time{font-size:11px;color:#9fb0c9;margin-top:4px;text-align:right}
+    .msg.me .time{color:#2c5a51}
+    .ticks{font-size:12px;margin-left:6px;opacity:.8}
+    .ticks.read{color:#4ea3ff}
 
-    .composer{ display:flex; gap:10px; padding:12px; border-top:1px solid #223356; background:#0b1222cc }
-    .composer input{ flex:1; padding:12px; border-radius:12px; border:1px solid #243453; background:#0b1222; color:var(--text) }
+    .composer{display:flex;gap:10px;padding:10px;border-top:1px solid #0f2327;background:#0f171a}
+    .composer .tool{background:#0f1a1d;border:1px solid #173035;border-radius:12px;padding:10px}
+    .composer input{flex:1;padding:12px;border-radius:22px;border:1px solid #173035;background:#0f1a1d;color:var(--text)}
+    .composer button.btn{background:#128C7E;border-radius:22px}
 
-    .keybar{ display:flex; gap:10px; padding:10px 16px; border-top:1px dashed #223356; background:#0c152acc }
-    .keybar input{ flex:1; padding:10px; border-radius:10px; border:1px solid #253a64; background:#0b1222; color:#dfe7fa }
-    .keybar .tiny{ opacity:.8 }
+    .keybar{display:flex;gap:10px;padding:8px 12px;border-top:1px dashed #0f2327;background:#0f171a}
+    .keybar input{flex:1;padding:10px;border-radius:10px;border:1px solid #173035;background:#0f1a1d;color:#dfe7fa}
 
-    .empty{ display:grid; place-items:center; color:#9fb0c9 }
+    .empty{display:grid;place-items:center;color:#9fb0c9}
+
+    .toast{position:fixed;right:16px;bottom:16px;background:#101a33;border:1px solid #223356;border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px #0008}
+
+    .hidden{display:none !important}
+    @media(max-width:900px){.auth{grid-template-columns:1fr}.app{grid-template-columns:1fr}.me .name{display:none}}
 
     .toast{ position:fixed; right:16px; bottom:16px; background:#101a33; border:1px solid #223356; border-radius:12px; padding:12px 14px; box-shadow:0 10px 30px #0008 }
 
@@ -176,30 +162,23 @@
     <!-- ===== APP VIEW ===== -->
     <section id="app" class="app hidden">
       <aside class="sidebar card">
-        <div class="me">
-          <div class="avatar"></div>
-          <div>
-            <div class="name" id="meName">@me</div>
-            <div class="tiny" id="meHint">Local user</div>
-          </div>
+        <div class="wa-topbar">
+          <div class="wa-title">LuxChat</div>
+          <div class="wa-icons">🔍 ⋮</div>
         </div>
-
         <div class="search">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/></svg>
-          <input id="search" placeholder="Search rooms…" />
+          <input id="search" placeholder="Search or start new chat…" />
         </div>
-
         <div class="threads" id="threads"></div>
-
-        <div class="row">
-          <input id="newRoom" class="input" placeholder="Create or join room ID"/>
-          <button id="addRoom" class="btn secondary">Join</button>
+        <div class="row" style="padding:10px">
+          <input id="newRoom" class="input" placeholder="Room or contact"/>
+          <button id="addRoom" class="btn secondary">New</button>
         </div>
-
-        <button id="logoutBtn" class="btn secondary">Logout</button>
+        <button id="logoutBtn" class="btn secondary" style="margin:10px">Logout</button>
       </aside>
 
-      <main id="roomPanel" class="room card">
+      <main id="roomPanel" class="room card"> id="roomPanel" class="room card">
         <header class="room-head">
           <div>
             <div class="title" id="roomTitle">No room selected</div>
@@ -219,8 +198,10 @@
         </div>
 
         <div class="composer">
-          <input id="message" placeholder="Write a message… (text only)" maxlength="400"/>
-          <button id="send" class="btn">Send</button>
+          <div class="tool" title="Emoji">😊</div>
+          <div class="tool" title="Attach">📎</div>
+          <input id="message" placeholder="Type a message" maxlength="400"/>
+          <button id="send" class="btn">➤</button>
         </div>
       </main>
     </section>
@@ -308,9 +289,11 @@
   // ---------- App state
   const bc = ('BroadcastChannel' in self) ? new BroadcastChannel('luxchat') : null;
   const state = {
-    user: null, // { username }
-    currentRoom: null, // roomId string
-    keyCache: {}, // roomId -> CryptoKey
+    user: null,
+    currentRoom: null,
+    keyCache: {},
+    presence: {}, // room -> { users: Set }
+    receipts: {}  // msgId -> 'sent'|'delivered'|'read'
   };
 
   // ---------- Auth
@@ -475,7 +458,8 @@
     const msgs = loadMsgs(state.user.username, state.currentRoom);
     msgs.forEach(m=>{
       const div=document.createElement('div'); div.className='msg' + (m.me?' me':'');
-      div.innerHTML = `${m.text.replace(/</g,'&lt;')}<div class="time">${ui.time(m.ts)}</div>`;
+      const ticks = m.me ? `<span class="ticks ${m.status==='read'?'read':''}">${m.status==='sent'?'✓':m.status==='delivered'?'✓✓':'✓✓'}</span>` : '';
+      div.innerHTML = `${String(m.text).replace(/</g,'&lt;')}<div class="time">${ui.time(m.ts)} ${ticks}</div>`;
       box.appendChild(div);
     });
     box.scrollTop = box.scrollHeight;
@@ -487,50 +471,82 @@
     const key = state.keyCache[state.currentRoom];
     let payload = null; let preview = text.slice(0, 40);
     if(key){ payload = await encrypt(key, text); }
-    const msg = { id: crypto.randomUUID(), room: state.currentRoom, ts: Date.now(), from: state.user.username, me:true,
-      text: key? '🔒 ' + preview + '…' : text, preview };
+    const id = crypto.randomUUID();
+    const msg = { id, room: state.currentRoom, ts: Date.now(), from: state.user.username, me:true,
+      text: key? '🔒 ' + preview + '…' : text, preview, status:'sent' };
     const msgs = loadMsgs(state.user.username, state.currentRoom); msgs.push(msg); saveMsgs(state.user.username, state.currentRoom, msgs);
     renderChat(); input.value='';
 
     // Broadcast to other tabs (ciphertext if key exists)
-    const outgoing = { type:'msg', room: state.currentRoom, to: 'any', from: state.user.username, ts: msg.ts,
+    const outgoing = { type:'msg', id, room: state.currentRoom, to: 'any', from: state.user.username, ts: msg.ts,
       ciphertext: payload, plaintext: key? null : text };
     if(bc) bc.postMessage(outgoing);
-    // Also mirror in a shared inbox list so other logged-in users on same device can pick up via storage event
     const inboxKey = 'luxchat_inbox';
     const box = store.get(inboxKey, []); box.push(outgoing); store.set(inboxKey, box);
+    // simulate delivery receipt to sender
+    setTimeout(()=>{
+      updateStatus(id,'delivered');
+    }, 100);
   }
   ui.qs('#send').addEventListener('click', sendMessage);
   ui.qs('#message').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
 
   // Receive via BroadcastChannel
-  if(bc){ bc.onmessage = async (ev)=>{ await handleIncoming(ev.data); }; }
+  if(bc){ bc.onmessage = async (ev)=>{
+    if(ev.data?.type==='msg') await handleIncoming(ev.data);
+    if(ev.data?.type==='receipt') handleReceipt(ev.data);
+  }; }
   window.addEventListener('storage', async (ev)=>{
-    if(ev.key==='luxchat_inbox' && ev.newValue){
-      try{ const arr = JSON.parse(ev.newValue) || []; if(arr.length){ const item=arr[arr.length-1]; await handleIncoming(item); } }catch{}
+    if(!ev.key) return;
+    try{
+      if(ev.key==='luxchat_inbox' && ev.newValue){
+        const arr = JSON.parse(ev.newValue) || []; if(!arr.length) return; const item=arr[arr.length-1];
+        if(item.type==='msg') await handleIncoming(item);
+        if(item.type==='receipt') handleReceipt(item);
+      }
+    }catch{}
+  }); } }catch{}
     }
   });
 
   async function handleIncoming(packet){
     if(!packet || packet.type!=='msg') return;
-    const {room, from, ts, ciphertext, plaintext} = packet;
-    const me = state?.user?.username;
-    if(!me) return; // not logged in
-    // Only show to users who have joined the room locally
-    const rooms = listRooms(me);
-    if(!rooms.includes(room)) return;
+    const {id, room, from, ts, ciphertext, plaintext} = packet;
+    const me = state?.user?.username; if(!me) return;
+    const rooms = listRooms(me); if(!rooms.includes(room)) return;
 
-    let shownText = plaintext;
-    const key = state.keyCache[room];
+    let shownText = plaintext; const key = state.keyCache[room];
     if(ciphertext && key){
       try{ shownText = await decrypt(key, ciphertext); }catch{ shownText = '🔐 Encrypted message (wrong secret)'; }
     } else if(ciphertext && !key){ shownText = '🔐 Encrypted message (secret not set)'; }
 
-    const msg = { id: crypto.randomUUID(), room, ts, from, me:false, text: shownText, preview: String(shownText).slice(0,40) };
+    const msg = { id, room, ts, from, me:false, text: shownText, preview: String(shownText).slice(0,40) };
     const msgs = loadMsgs(me, room); msgs.push(msg); saveMsgs(me, room, msgs);
 
     if(state.currentRoom===room) renderChat();
     notify(`New message from @${from}`, `Room: ${room}`);
+
+    // send read vs delivered receipts based on focus & room
+    const receipt = (document.hasFocus() && state.currentRoom===room) ? 'read' : 'delivered';
+    const ack = { type:'receipt', id, room, status: receipt };
+    if(bc) bc.postMessage(ack);
+    const inboxKey = 'luxchat_inbox'; const box = store.get(inboxKey, []); box.push(ack); store.set(inboxKey, box);
+  }
+
+  function handleReceipt({id, room, status}){
+    // update my copy of sent message
+    if(status!=='sent'){
+      const msgs = loadMsgs(state.user.username, room);
+      const idx = msgs.findIndex(m=>m.id===id && m.me);
+      if(idx>-1){ msgs[idx].status = status; saveMsgs(state.user.username, room, msgs); if(state.currentRoom===room) renderChat(); }
+    }
+  }
+
+  function updateStatus(id, status){
+    const room = state.currentRoom; if(!room) return;
+    const msgs = loadMsgs(state.user.username, room);
+    const idx = msgs.findIndex(m=>m.id===id && m.me);
+    if(idx>-1){ msgs[idx].status = status; saveMsgs(state.user.username, room, msgs); renderChat(); }
   }
 
   // Session restore
