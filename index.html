@@ -208,353 +208,80 @@
 
     <div class="toast hidden" id="toast"></div>
   </div>
+<script type="module">
+  // Import Firebase SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  <script>
-  /* =============================================
-     LuxChat — private, local-only chat (single file)
-     Features:
-      - Register/Login (PBKDF2 salted password hash in localStorage)
-      - Rooms list stored locally per user
-      - Per-room "secret" used to derive AES-GCM key; messages are encrypted at-rest
-      - BroadcastChannel to sync messages across tabs (simulate multi-user on same device)
-      - Notification API: prompts after login; shows system notification on new incoming chats
-      - No external servers. No tracking. Works offline after first load.
-
-     IMPORTANT (per your request):
-     The Firebase config you provided is included below (commented). Not used here because all data stays local.
-
-     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-     const firebaseConfig = {
-       apiKey: "AIzaSyAaxuleENvEkCeyGT-fpbD2MucqYqrTVKs",
-       authDomain: "chating-37001.firebaseapp.com",
-       databaseURL: "https://chating-37001-default-rtdb.firebaseio.com",
-       projectId: "chating-37001",
-       storageBucket: "chating-37001.firebasestorage.app",
-       messagingSenderId: "34963823190",
-       appId: "1:34963823190:web:1a799357de4b552564b9f7",
-       measurementId: "G-FY3X1671VP"
-     };
-  ============================================== */
-
-  // ---------- Utilities (crypto, storage, time, UI helpers)
-  const enc = new TextEncoder();
-  const dec = new TextDecoder();
-
-  const ui = {
-    qs: (sel, el=document)=> el.querySelector(sel),
-    qsa: (sel, el=document)=> [...el.querySelectorAll(sel)],
-    toast(msg){ const t=ui.qs('#toast'); t.textContent=msg; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'), 2200); },
-    time(ts=Date.now()){ const d=new Date(ts); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); },
+  // === Your config ===
+  const firebaseConfig = {
+    apiKey: "AIzaSyAaxuleENvEkCeyGT-fpbD2MucqYqrTVKs",
+    authDomain: "chating-37001.firebaseapp.com",
+    databaseURL: "https://chating-37001-default-rtdb.firebaseio.com",
+    projectId: "chating-37001",
+    storageBucket: "chating-37001.firebasestorage.app",
+    messagingSenderId: "34963823190",
+    appId: "1:34963823190:web:1a799357de4b552564b9f7",
+    measurementId: "G-FY3X1671VP"
   };
 
-  const store = {
-    get(key, dflt){ try{ return JSON.parse(localStorage.getItem(key)) ?? dflt; }catch{ return dflt } },
-    set(key, val){ localStorage.setItem(key, JSON.stringify(val)); },
-    del(key){ localStorage.removeItem(key); }
-  };
+  // Initialize
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
 
-  async function hashPassword(pass, salt){
-    const k = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveBits','deriveKey']);
-    const s = salt || crypto.getRandomValues(new Uint8Array(16));
-    const key = await crypto.subtle.deriveKey(
-      {name:'PBKDF2', salt:s, iterations:120000, hash:'SHA-256'},
-      k, {name:'AES-GCM', length:256}, true, ['encrypt','decrypt']
-    );
-    const raw = new Uint8Array(await crypto.subtle.exportKey('raw', key));
-    return { hash: btoa(String.fromCharCode(...raw)), salt: Array.from(s) };
-  }
-
-  async function deriveRoomKey(username, roomId, secret){
-    if(!secret) return null;
-    const material = await crypto.subtle.importKey('raw', enc.encode(secret), 'PBKDF2', false, ['deriveKey']);
-    const roomSalt = enc.encode(`${username}|${roomId}`); // different per user+room
-    return await crypto.subtle.deriveKey(
-      {name:'PBKDF2', salt:roomSalt, iterations:150000, hash:'SHA-256'},
-      material, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
-    );
-  }
-
-  async function encrypt(key, text){
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, enc.encode(text));
-    return { iv: Array.from(iv), data: btoa(String.fromCharCode(...new Uint8Array(ct))) };
-  }
-  async function decrypt(key, payload){
-    const iv = new Uint8Array(payload.iv);
-    const buf = Uint8Array.from(atob(payload.data), c=>c.charCodeAt(0));
-    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, buf);
-    return dec.decode(pt);
-  }
-
-  // ---------- App state
-  const bc = ('BroadcastChannel' in self) ? new BroadcastChannel('luxchat') : null;
-  const state = {
-    user: null,
-    currentRoom: null,
-    keyCache: {},
-    presence: {}, // room -> { users: Set }
-    receipts: {}  // msgId -> 'sent'|'delivered'|'read'
-  };
-
-  // ---------- Auth
-  const usersKey = 'luxchat_users';
-  const sessionKey = 'luxchat_session';
-
-  function loadUsers(){ return store.get(usersKey, {}); }
-  function saveUsers(u){ store.set(usersKey, u); }
-
-  function saveSession(username){ store.set(sessionKey,{username}); }
-  function loadSession(){ return store.get(sessionKey,null); }
-  function clearSession(){ store.del(sessionKey); }
-
-  // ---------- Rooms & Messages storage
-  function roomsKey(username){ return `luxchat_rooms_${username}`; }
-  function msgsKey(username, roomId){ return `luxchat_msgs_${username}_${roomId}`; }
-
-  function listRooms(username){ return store.get(roomsKey(username), []); }
-  function saveRooms(username, rooms){ store.set(roomsKey(username), rooms); }
-
-  function loadMsgs(username, roomId){ return store.get(msgsKey(username, roomId), []); }
-  function saveMsgs(username, roomId, msgs){ store.set(msgsKey(username, roomId), msgs); }
-
-  // ---------- Notifications
-  async function ensureNotificationPermission(){
-    if(!('Notification' in window)) return;
-    if(Notification.permission === 'default'){
-      try{ await Notification.requestPermission(); } catch{}
-    }
-  }
-  function notify(title, body){
-    if(!('Notification' in window)) return;
-    if(document.hasFocus()) return; // avoid spamming when tab is active
-    if(Notification.permission === 'granted'){
-      new Notification(title, { body });
-    }
-  }
-
-  // ---------- UI wiring
-  const authView = ui.qs('#auth');
-  const appView = ui.qs('#app');
-  const loginForm = ui.qs('#loginForm');
-  const registerForm = ui.qs('#registerForm');
-  const tabs = ui.qsa('.tab');
-
-  tabs.forEach(t=>t.addEventListener('click', ()=>{
-    tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active');
-    const mode = t.dataset.tab;
-    loginForm.classList.toggle('hidden', mode!=='login');
-    registerForm.classList.toggle('hidden', mode!=='register');
-  }));
-
-  registerForm.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const username = ui.qs('#regUser').value.trim();
-    const pass = ui.qs('#regPass').value;
-    if(username.length < 3 || pass.length < 6){ return ui.toast('Username ≥3, Password ≥6'); }
-    const users = loadUsers();
-    if(users[username]) return ui.toast('Username already exists');
-    const {hash, salt} = await hashPassword(pass);
-    users[username] = { hash, salt };
-    saveUsers(users);
-    ui.toast('Account created. Please login.');
-    tabs[0].click();
-  });
-
-  loginForm.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const username = ui.qs('#loginUser').value.trim();
-    const pass = ui.qs('#loginPass').value;
-    const users = loadUsers(); const u = users[username];
-    if(!u) return ui.toast('User not found');
-    const {hash} = await hashPassword(pass, new Uint8Array(u.salt));
-    if(hash !== u.hash) return ui.toast('Invalid password');
-    state.user = { username };
-    saveSession(username);
-    await ensureNotificationPermission();
-    enterApp();
-  });
-
-  function enterApp(){
-    ui.qs('#meName').textContent = '@' + state.user.username;
-    authView.classList.add('hidden');
-    appView.classList.remove('hidden');
-    renderRooms();
-  }
-
-  // Logout
-  ui.qs('#logoutBtn').addEventListener('click', ()=>{
-    clearSession(); state.user=null; state.currentRoom=null; state.keyCache={};
-    appView.classList.add('hidden'); authView.classList.remove('hidden');
-  });
-
-  // Rooms
-  ui.qs('#addRoom').addEventListener('click', ()=>{
-    const roomId = ui.qs('#newRoom').value.trim(); if(!roomId) return;
-    const rooms = listRooms(state.user.username);
-    if(!rooms.includes(roomId)){ rooms.unshift(roomId); saveRooms(state.user.username, rooms); }
-    ui.qs('#newRoom').value='';
-    renderRooms(roomId);
-  });
-  ui.qs('#search').addEventListener('input', renderRooms);
-
-  function renderRooms(selectRoom){
-    const wrap = ui.qs('#threads'); wrap.innerHTML='';
-    const q = ui.qs('#search').value.trim().toLowerCase();
-    let rooms = listRooms(state.user.username);
-    if(q) rooms = rooms.filter(r=>r.toLowerCase().includes(q));
-    if(rooms.length===0){
-      const div=document.createElement('div'); div.className='tiny'; div.textContent='No rooms yet. Join one below.'; wrap.appendChild(div);
-    } else {
-      rooms.forEach(r=>{
-        const msgs = loadMsgs(state.user.username, r);
-        const last = msgs[msgs.length-1];
-        const el = document.createElement('div'); el.className='thread card thread' + (state.currentRoom===r?' active':'');
-        el.innerHTML = `<div class="icon">💬</div>
-          <div class="meta"><div class="title">${r}</div>
-          <div class="last">${last? (last.me? 'You: ':'') + (last.preview||'') : 'No messages yet'}</div></div>`;
-        el.addEventListener('click', ()=> openRoom(r));
-        wrap.appendChild(el);
+  // ===== Register User =====
+  async function firebaseRegister(username, password) {
+    const email = `${username}@luxchat.local`;
+    try {
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      await set(ref(db, "users/" + userCred.user.uid), {
+        username: username,
+        createdAt: new Date().toISOString()
       });
-    }
-    if(selectRoom) openRoom(selectRoom);
-  }
-
-  async function openRoom(roomId){
-    state.currentRoom = roomId;
-    ui.qs('#roomTitle').textContent = roomId;
-    ui.qs('#roomSub').textContent = 'Encrypted local messages';
-    const secretSaved = store.get(`luxchat_secret_${state.user.username}_${roomId}`, null);
-    ui.qs('#secret').value = secretSaved || '';
-    await setSecret(false);
-    renderChat();
-  }
-
-  async function setSecret(showToast=true){
-    const s = ui.qs('#secret').value.trim();
-    if(!state.currentRoom) return;
-    if(s){
-      const key = await deriveRoomKey(state.user.username, state.currentRoom, s);
-      state.keyCache[state.currentRoom] = key;
-      store.set(`luxchat_secret_${state.user.username}_${state.currentRoom}`, s);
-      ui.qs('#e2eBadge').textContent='E2E on';
-      ui.qs('#e2eBadge').style.borderColor = '#22c55e99';
-      ui.qs('#secretState').textContent='Set';
-      if(showToast) ui.toast('Secret set. New messages will be encrypted.');
-    } else {
-      delete state.keyCache[state.currentRoom];
-      store.del(`luxchat_secret_${state.user.username}_${state.currentRoom}`);
-      ui.qs('#e2eBadge').textContent='E2E off';
-      ui.qs('#e2eBadge').style.borderColor = '#223356';
-      ui.qs('#secretState').textContent='Not set';
-      if(showToast) ui.toast('Secret removed.');
+      alert("Registration successful! Please login.");
+      return true;
+    } catch (err) {
+      alert("Error: " + err.message);
+      return false;
     }
   }
-  ui.qs('#saveSecret').addEventListener('click', ()=> setSecret(true));
 
-  // Chat render/send
-  function renderChat(){
-    const box = ui.qs('#chat'); box.innerHTML='';
-    if(!state.currentRoom){ box.innerHTML = '<div class="empty">Select a room to start chatting.</div>'; return; }
-    const msgs = loadMsgs(state.user.username, state.currentRoom);
-    msgs.forEach(m=>{
-      const div=document.createElement('div'); div.className='msg' + (m.me?' me':'');
-      const ticks = m.me ? `<span class="ticks ${m.status==='read'?'read':''}">${m.status==='sent'?'✓':m.status==='delivered'?'✓✓':'✓✓'}</span>` : '';
-      div.innerHTML = `${String(m.text).replace(/</g,'&lt;')}<div class="time">${ui.time(m.ts)} ${ticks}</div>`;
-      box.appendChild(div);
-    });
-    box.scrollTop = box.scrollHeight;
+  // ===== Login User =====
+  async function firebaseLogin(username, password) {
+    const email = `${username}@luxchat.local`;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      localStorage.setItem("luxchat_session", JSON.stringify({ username }));
+      alert("Login successful!");
+      return true;
+    } catch (err) {
+      alert("Login failed: " + err.message);
+      return false;
+    }
   }
 
-  async function sendMessage(){
-    const input = ui.qs('#message'); const text = input.value.trim();
-    if(!text || !state.currentRoom) return;
-    const key = state.keyCache[state.currentRoom];
-    let payload = null; let preview = text.slice(0, 40);
-    if(key){ payload = await encrypt(key, text); }
-    const id = crypto.randomUUID();
-    const msg = { id, room: state.currentRoom, ts: Date.now(), from: state.user.username, me:true,
-      text: key? '🔒 ' + preview + '…' : text, preview, status:'sent' };
-    const msgs = loadMsgs(state.user.username, state.currentRoom); msgs.push(msg); saveMsgs(state.user.username, state.currentRoom, msgs);
-    renderChat(); input.value='';
-
-    // Broadcast to other tabs (ciphertext if key exists)
-    const outgoing = { type:'msg', id, room: state.currentRoom, to: 'any', from: state.user.username, ts: msg.ts,
-      ciphertext: payload, plaintext: key? null : text };
-    if(bc) bc.postMessage(outgoing);
-    const inboxKey = 'luxchat_inbox';
-    const box = store.get(inboxKey, []); box.push(outgoing); store.set(inboxKey, box);
-    // simulate delivery receipt to sender
-    setTimeout(()=>{
-      updateStatus(id,'delivered');
-    }, 100);
-  }
-  ui.qs('#send').addEventListener('click', sendMessage);
-  ui.qs('#message').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); }});
-
-  // Receive via BroadcastChannel
-  if(bc){ bc.onmessage = async (ev)=>{
-    if(ev.data?.type==='msg') await handleIncoming(ev.data);
-    if(ev.data?.type==='receipt') handleReceipt(ev.data);
-  }; }
-  window.addEventListener('storage', async (ev)=>{
-    if(!ev.key) return;
-    try{
-      if(ev.key==='luxchat_inbox' && ev.newValue){
-        const arr = JSON.parse(ev.newValue) || []; if(!arr.length) return; const item=arr[arr.length-1];
-        if(item.type==='msg') await handleIncoming(item);
-        if(item.type==='receipt') handleReceipt(item);
-      }
-    }catch{}
-  }); } }catch{}
+  // === Hook into existing forms ===
+  document.querySelector("#registerForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.querySelector("#regUser").value.trim();
+    const password = document.querySelector("#regPass").value;
+    if (await firebaseRegister(username, password)) {
+      document.querySelector('[data-tab="login"]').click();
     }
   });
 
-  async function handleIncoming(packet){
-    if(!packet || packet.type!=='msg') return;
-    const {id, room, from, ts, ciphertext, plaintext} = packet;
-    const me = state?.user?.username; if(!me) return;
-    const rooms = listRooms(me); if(!rooms.includes(room)) return;
-
-    let shownText = plaintext; const key = state.keyCache[room];
-    if(ciphertext && key){
-      try{ shownText = await decrypt(key, ciphertext); }catch{ shownText = '🔐 Encrypted message (wrong secret)'; }
-    } else if(ciphertext && !key){ shownText = '🔐 Encrypted message (secret not set)'; }
-
-    const msg = { id, room, ts, from, me:false, text: shownText, preview: String(shownText).slice(0,40) };
-    const msgs = loadMsgs(me, room); msgs.push(msg); saveMsgs(me, room, msgs);
-
-    if(state.currentRoom===room) renderChat();
-    notify(`New message from @${from}`, `Room: ${room}`);
-
-    // send read vs delivered receipts based on focus & room
-    const receipt = (document.hasFocus() && state.currentRoom===room) ? 'read' : 'delivered';
-    const ack = { type:'receipt', id, room, status: receipt };
-    if(bc) bc.postMessage(ack);
-    const inboxKey = 'luxchat_inbox'; const box = store.get(inboxKey, []); box.push(ack); store.set(inboxKey, box);
-  }
-
-  function handleReceipt({id, room, status}){
-    // update my copy of sent message
-    if(status!=='sent'){
-      const msgs = loadMsgs(state.user.username, room);
-      const idx = msgs.findIndex(m=>m.id===id && m.me);
-      if(idx>-1){ msgs[idx].status = status; saveMsgs(state.user.username, room, msgs); if(state.currentRoom===room) renderChat(); }
+  document.querySelector("#loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.querySelector("#loginUser").value.trim();
+    const password = document.querySelector("#loginPass").value;
+    if (await firebaseLogin(username, password)) {
+      location.reload(); // reinit session
     }
-  }
+  });
+</script>
 
-  function updateStatus(id, status){
-    const room = state.currentRoom; if(!room) return;
-    const msgs = loadMsgs(state.user.username, room);
-    const idx = msgs.findIndex(m=>m.id===id && m.me);
-    if(idx>-1){ msgs[idx].status = status; saveMsgs(state.user.username, room, msgs); renderChat(); }
-  }
 
-  // Session restore
-  (async function init(){
-    const session = loadSession();
-    if(session){ state.user = { username: session.username }; enterApp(); }
-  })();
-
-  </script>
 </body>
 </html>
