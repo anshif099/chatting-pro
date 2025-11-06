@@ -1,220 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WhatsApp‑style Local Chat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LuxChat - WhatsApp Style Secure Chat</title>
   <style>
-    :root{--bg:#0a1014;--wa-green:#075E54;--wa-green-dark:#06453f;--wa-accent:#128C7E;--wa-chat:#DCF8C6;--panel:#0e151aee;--text:#e8edf1;--muted:#9fb0c9;--radius:18px;--blur:14px;}
-    *{box-sizing:border-box}
-    html,body{height:100%}
+    :root {
+      --bg: #0a1014;
+      --wa-green: #075E54;
+      --wa-accent: #128C7E;
+      --wa-chat: #DCF8C6;
+      --panel: #0e151aee;
+      --text: #e8edf1;
+      --muted: #9fb0c9;
+      --radius: 18px;
+      --blur: 14px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
     body{
-      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background:#0b141a;
       color:var(--text);
-      background:
-        radial-gradient(1200px 800px at 10% 10%, #1e293b55, transparent 60%),
-        radial-gradient(1000px 700px at 90% 30%, #0ea5e944, transparent 60%),
-        radial-gradient(1000px 700px at 50% 90%, #7c3aed33, transparent 60%),
-        var(--bg);
-      display:grid; place-items:center;
+      height:100vh;
+      display:grid;
+      place-items:center;
     }
-    .shell{width:min(1100px, 95vw); height:min(90vh, 820px); position:relative;}
-
-    .card{
-      background: var(--panel);
-      backdrop-filter: blur(var(--blur));
-      -webkit-backdrop-filter: blur(var(--blur));
-      border: 1px solid #2a365570;
-      box-shadow: 0 30px 60px #0008, inset 0 1px 0 #ffffff08;
-      border-radius: var(--radius);
-    }
-
-    /*/* Auth */
-    .auth{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;padding:18px}
-    .hero{position:relative;overflow:hidden;border-radius:var(--radius);background:linear-gradient(135deg,#06453f,#075E54,#128C7E)}
-    .hero-inner{position:relative;padding:28px;height:100%;display:grid;align-content:space-between}
-    .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.5px}
-    .logo-badge{width:42px;height:42px;border-radius:12px;background:#fff1;box-shadow:inset 0 1px 0 #fff6,0 10px 30px #0006}
-    .tagline{color:#d9ebe7;line-height:1.5}
-    .pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;padding:8px 12px;border-radius:999px;background:#ffffff14;border:1px solid #ffffff3a}
-
-    .auth-panel{padding:24px;display:grid;gap:14px}
+    .shell{width:95vw;max-width:1100px;height:90vh;display:grid;place-items:center}
+    .card{background:var(--panel);border-radius:var(--radius);box-shadow:0 20px 60px #0008}
+    /* AUTH */
+    #auth{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px}
+    .hero{background:linear-gradient(135deg,#06453f,#075E54,#128C7E);border-radius:var(--radius);padding:30px;color:#fff;display:flex;flex-direction:column;justify-content:space-between}
+    .logo{font-weight:800;font-size:22px}
+    .auth-panel{display:grid;gap:12px;padding:24px}
     .tabs{display:flex;background:#0b1222aa;border-radius:12px;padding:6px;border:1px solid #1e2e33}
-    .tab{flex:1;text-align:center;padding:10px 12px;border-radius:10px;cursor:pointer;user-select:none;color:var(--muted)}
-    .tab.active{background:#0e1b1e;color:var(--text);border:1px solid #1e2e33}
-
-    .field{display:grid;gap:8px}
-    .field label{font-size:12px;color:#b7c0cf}
-    .input{width:100%;background:#0b1214;border:1px solid #1e2e33;color:var(--text);border-radius:12px;padding:12px 14px;outline:none}
-    .input:focus{border-color:#128C7E;box-shadow:0 0 0 3px #128C7E1e}
-
-    .btn{cursor:pointer;border:0;border-radius:12px;padding:12px 14px;color:white;font-weight:700;letter-spacing:.3px;background:#128C7E;box-shadow:0 10px 25px #0007}
-    .btn.secondary{background:#0b1214;border:1px solid #1e2e33;color:#d5def0;font-weight:600}
-    .row{display:flex;gap:12px;align-items:center}
-    .help{font-size:12px;color:#9fb0c9}
-    .tiny{font-size:11px;color:#95a2b8}
-
-    /*/* App */
-    .app{display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px;height:100%}
-    .sidebar{display:grid;grid-template-rows:auto 52px 1fr auto;gap:12px;padding:0;border-radius:var(--radius);overflow:hidden}
-    .wa-topbar{background:#075E54;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
-    .wa-title{font-weight:800}
-    .wa-icons{opacity:.85}
-
-    .search{background:#0b1214;border-top:1px solid #0f2327;border-bottom:1px solid #0f2327;padding:8px}
-    .search input{width:100%;padding:10px 12px 10px 36px;border-radius:20px;background:#0f1a1d;border:1px solid #173035;color:var(--text)}
-    .search svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);opacity:.6}
-
-    .threads{display:grid;gap:0;overflow:auto}
-    .thread{display:flex;gap:12px;padding:12px;border-bottom:1px solid #0f2327;background:#0b1214;cursor:pointer}
+    .tab{flex:1;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--muted)}
+    .tab.active{background:#0e1b1e;color:var(--text)}
+    .field{display:grid;gap:6px}
+    .input{padding:12px;border-radius:12px;border:1px solid #173035;background:#0f1a1d;color:var(--text)}
+    .btn{padding:12px;border-radius:12px;border:none;cursor:pointer;background:#128C7E;color:#fff;font-weight:700}
+    .btn.secondary{background:#0b1214;border:1px solid #1e2e33;color:#d5def0}
+    .hidden{display:none!important}
+    /* APP */
+    .app{display:grid;grid-template-columns:320px 1fr;gap:10px;height:100%}
+    .sidebar{display:grid;grid-template-rows:auto 52px 1fr auto;overflow:hidden;border-radius:var(--radius)}
+    .wa-topbar{background:#075E54;padding:14px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+    .search{padding:10px;background:#0b1214;border-bottom:1px solid #0f2327}
+    .search input{width:100%;padding:10px;border-radius:20px;border:none;background:#0f1a1d;color:var(--text)}
+    .threads{overflow:auto;background:#0b1214}
+    .thread{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #0f2327;cursor:pointer}
     .thread:hover{background:#0f171a}
-    .thread.active{background:#0f171a;outline:none}
-    .avatar{width:42px;height:42px;border-radius:50%;background:#173035;display:grid;place-items:center;font-weight:700}
-    .thread .meta{display:grid}
-    .thread .meta .title{font-weight:700}
-    .thread .meta .last{color:#9fb0c9;font-size:12px}
-
-    .room{display:grid;grid-template-rows:auto 1fr auto; height:100%; overflow:hidden; border-radius:var(--radius); border:1px solid #0f2327; background:#0b1214}
-    .room-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#075E54;border-bottom:1px solid #06453f}
-    .room-head .title{font-weight:800;letter-spacing:.2px}
-    .room-head .badge{font-size:12px;color:#e8f7f2;background:#ffffff22;border:1px solid #ffffff3a;padding:6px 10px;border-radius:999px}
-
-    .chat{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"220\" height=\"220\" viewBox=\"0 0 220 220\" opacity=\"0.06\"><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"white\"/></svg>') repeat}
-
-    .msg{max-width:74%;padding:8px 10px;border-radius:16px;border:1px solid #0f2327;background:#111b1e;position:relative}
-    .msg.me{margin-left:auto;background:#DCF8C6;color:#082b1f;border-color:#c6e8b2}
-    .msg .time{font-size:11px;color:#9fb0c9;margin-top:4px;text-align:right}
+    .avatar{width:40px;height:40px;border-radius:50%;background:#173035;display:grid;place-items:center;font-weight:700}
+    .meta .title{font-weight:700}
+    .meta .last{font-size:12px;color:#9fb0c9}
+    .room{display:grid;grid-template-rows:auto 1fr auto;border-radius:var(--radius);border:1px solid #0f2327;background:#0b1214}
+    .room-head{background:#075E54;padding:14px;display:flex;justify-content:space-between;align-items:center;color:#fff}
+    .chat{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"220\" height=\"220\" opacity=\"0.04\"><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"white\"/></svg>') repeat}
+    .msg{max-width:74%;padding:10px;border-radius:12px;background:#111b1e;color:#fff}
+    .msg.me{margin-left:auto;background:var(--wa-chat);color:#000}
+    .msg .time{font-size:11px;margin-top:4px;text-align:right;color:#9fb0c9}
     .msg.me .time{color:#2c5a51}
-    .ticks{font-size:12px;margin-left:6px;opacity:.8}
+    .ticks{font-size:12px;margin-left:4px;opacity:.8}
     .ticks.read{color:#4ea3ff}
-
-    .composer{display:flex;gap:10px;padding:10px;border-top:1px solid #0f2327;background:#0f171a}
-    .composer .tool{background:#0f1a1d;border:1px solid #173035;border-radius:12px;padding:10px}
-    .composer input{flex:1;padding:12px;border-radius:22px;border:1px solid #173035;background:#0f1a1d;color:var(--text)}
-    .composer button.btn{background:#128C7E;border-radius:22px}
-
-    .keybar{display:flex;gap:10px;padding:8px 12px;border-top:1px dashed #0f2327;background:#0f171a}
-    .keybar input{flex:1;padding:10px;border-radius:10px;border:1px solid #173035;background:#0f1a1d;color:#dfe7fa}
-
-    .empty{display:grid;place-items:center;color:#9fb0c9}
-
-    .toast{position:fixed;right:16px;bottom:16px;background:#101a33;border:1px solid #223356;border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px #0008}
-
-    .hidden{display:none !important}
-    @media(max-width:900px){.auth{grid-template-columns:1fr}.app{grid-template-columns:1fr}.me .name{display:none}}
-
-    .toast{ position:fixed; right:16px; bottom:16px; background:#101a33; border:1px solid #223356; border-radius:12px; padding:12px 14px; box-shadow:0 10px 30px #0008 }
-
-    .hidden{ display:none !important }
-    @media(max-width: 900px){ .auth{ grid-template-columns:1fr } .app{ grid-template-columns:1fr } .me .name{ display:none } }
+    .composer{display:flex;gap:10px;padding:10px;background:#0f171a;border-top:1px solid #0f2327}
+    .composer input{flex:1;padding:12px;border-radius:22px;border:none;background:#0f1a1d;color:var(--text)}
+    .composer button{background:#128C7E;border:none;border-radius:22px;padding:12px 18px;color:#fff;cursor:pointer}
+    .toast{position:fixed;bottom:16px;right:16px;background:#101a33;padding:10px 14px;border-radius:8px;display:none}
   </style>
 </head>
 <body>
-  <div class="shell">
-
-    <!-- ===== AUTH VIEW ===== -->
-    <section id="auth" class="card auth">
-      <div class="hero card">
-        <div class="hero-inner">
-          <div class="logo">
-            <div class="logo-badge"></div>
-            <div>
-              <div style="font-size:20px">LuxChat</div>
-              <div class="tiny">Private • Local • Elegant</div>
-            </div>
-          </div>
-
-          <div>
-            <div class="pill">No servers — your messages are encrypted locally</div>
-            <p class="tagline">Register or login to start a private, local-only chat experience. Messages are encrypted
-              with a key you control (per-chat secret) and stored in your browser only.</p>
-            <div class="tiny">Tip: open this page in two tabs, login with different usernames, join the same room & secret
-              to simulate a 2‑person chat across tabs.</div>
-          </div>
-        </div>
+<div class="shell">
+  <section id="auth" class="card">
+    <div class="hero">
+      <div class="logo">LuxChat</div>
+      <div>
+        <p>Private WhatsApp-style chat with end-to-end encryption. Register or login to start.</p>
       </div>
-
-      <div class="auth-panel">
-        <div class="tabs">
-          <div class="tab active" data-tab="login">Login</div>
-          <div class="tab" data-tab="register">Register</div>
-        </div>
-
-        <form id="loginForm" class="panel" autocomplete="off">
-          <div class="field"><label>Username</label><input class="input" id="loginUser" required></div>
-          <div class="field"><label>Password</label><input class="input" id="loginPass" type="password" required></div>
-          <button class="btn" type="submit">Login</button>
-          <div class="help">New here? Switch to <b>Register</b> above.</div>
-        </form>
-
-        <form id="registerForm" class="panel hidden" autocomplete="off">
-          <div class="field"><label>Username</label><input class="input" id="regUser" required></div>
-          <div class="field"><label>Password</label><input class="input" id="regPass" type="password" required></div>
-          <div class="tiny">Your password protects your account and helps derive encryption keys.</div>
-          <button class="btn" type="submit">Create Account</button>
-        </form>
-
-        <div class="tiny">Notifications: we'll ask for permission after login so you get a system alert on new messages.</div>
-        <div class="tiny">Security: password is salted + PBKDF2-hashed; messages are AES‑GCM encrypted before saving locally.</div>
+    </div>
+    <div class="auth-panel">
+      <div class="tabs">
+        <div class="tab active" data-tab="login">Login</div>
+        <div class="tab" data-tab="register">Register</div>
       </div>
-    </section>
+      <form id="loginForm">
+        <div class="field"><label>Username</label><input class="input" id="loginUser" required></div>
+        <div class="field"><label>Password</label><input class="input" id="loginPass" type="password" required></div>
+        <button class="btn" type="submit">Login</button>
+      </form>
+      <form id="registerForm" class="hidden">
+        <div class="field"><label>Username</label><input class="input" id="regUser" required></div>
+        <div class="field"><label>Password</label><input class="input" id="regPass" type="password" required></div>
+        <button class="btn" type="submit">Register</button>
+      </form>
+    </div>
+  </section>
 
-    <!-- ===== APP VIEW ===== -->
-    <section id="app" class="app hidden">
-      <aside class="sidebar card">
-        <div class="wa-topbar">
-          <div class="wa-title">LuxChat</div>
-          <div class="wa-icons">🔍 ⋮</div>
-        </div>
-        <div class="search">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/></svg>
-          <input id="search" placeholder="Search or start new chat…" />
-        </div>
-        <div class="threads" id="threads"></div>
-        <div class="row" style="padding:10px">
-          <input id="newRoom" class="input" placeholder="Room or contact"/>
-          <button id="addRoom" class="btn secondary">New</button>
-        </div>
-        <button id="logoutBtn" class="btn secondary" style="margin:10px">Logout</button>
-      </aside>
+  <section id="app" class="app hidden">
+    <aside class="sidebar card">
+      <div class="wa-topbar">
+        <div>LuxChat</div><div>⋮</div>
+      </div>
+      <div class="search"><input id="search" placeholder="Search or start new chat..."></div>
+      <div class="threads" id="threads"></div>
+      <div style="padding:10px">
+        <input id="newRoom" class="input" placeholder="Room name" />
+        <button id="addRoom" class="btn secondary">New</button>
+      </div>
+      <button id="logoutBtn" class="btn secondary" style="margin:10px">Logout</button>
+    </aside>
 
-      <main id="roomPanel" class="room card"> id="roomPanel" class="room card">
-        <header class="room-head">
-          <div>
-            <div class="title" id="roomTitle">No room selected</div>
-            <div class="tiny" id="roomSub">Create or select a room on the left.</div>
-          </div>
-          <div class="badge" id="e2eBadge">E2E off</div>
-        </header>
+    <main id="roomPanel" class="room card">
+      <div class="room-head"><div id="roomTitle">No chat selected</div><div id="statusBadge">Offline</div></div>
+      <div id="chat" class="chat"><div class="msg">Welcome to LuxChat!</div></div>
+      <div class="composer">
+        <input id="message" placeholder="Type a message" maxlength="400"/>
+        <button id="send">➤</button>
+      </div>
+    </main>
+  </section>
+  <div class="toast" id="toast"></div>
+</div>
 
-        <div id="chat" class="chat">
-          <div class="empty">Select a room to start chatting.</div>
-        </div>
-
-        <div class="keybar">
-          <input id="secret" placeholder="Per-room secret (both users must match)" />
-          <button id="saveSecret" class="btn secondary">Set Secret</button>
-          <span class="tiny" id="secretState">Not set</span>
-        </div>
-
-        <div class="composer">
-          <div class="tool" title="Emoji">😊</div>
-          <div class="tool" title="Attach">📎</div>
-          <input id="message" placeholder="Type a message" maxlength="400"/>
-          <button id="send" class="btn">➤</button>
-        </div>
-      </main>
-    </section>
-
-    <div class="toast hidden" id="toast"></div>
-  </div>
+<!-- Firebase & App Script -->
 <script type="module">
-  // Import Firebase SDKs
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // === Your config ===
   const firebaseConfig = {
     apiKey: "AIzaSyAaxuleENvEkCeyGT-fpbD2MucqYqrTVKs",
     authDomain: "chating-37001.firebaseapp.com",
@@ -226,62 +137,145 @@
     measurementId: "G-FY3X1671VP"
   };
 
-  // Initialize
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  // ===== Register User =====
-  async function firebaseRegister(username, password) {
-    const email = `${username}@luxchat.local`;
-    try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      await set(ref(db, "users/" + userCred.user.uid), {
-        username: username,
-        createdAt: new Date().toISOString()
-      });
-      alert("Registration successful! Please login.");
-      return true;
-    } catch (err) {
-      alert("Error: " + err.message);
-      return false;
-    }
-  }
+  const qs = (s)=>document.querySelector(s);
+  const toast=(t)=>{const el=qs('#toast');el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',2000)}
 
-  // ===== Login User =====
-  async function firebaseLogin(username, password) {
-    const email = `${username}@luxchat.local`;
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem("luxchat_session", JSON.stringify({ username }));
-      alert("Login successful!");
-      return true;
-    } catch (err) {
-      alert("Login failed: " + err.message);
-      return false;
-    }
-  }
+  const state={user:null,currentRoom:null};
+  const bc=('BroadcastChannel' in self)?new BroadcastChannel('luxchat'):null;
 
-  // === Hook into existing forms ===
-  document.querySelector("#registerForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const username = document.querySelector("#regUser").value.trim();
-    const password = document.querySelector("#regPass").value;
-    if (await firebaseRegister(username, password)) {
-      document.querySelector('[data-tab="login"]').click();
-    }
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.onclick=()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      qs('#loginForm').classList.toggle('hidden',tab.dataset.tab!=='login');
+      qs('#registerForm').classList.toggle('hidden',tab.dataset.tab!=='register');
+    };
   });
 
-  document.querySelector("#loginForm").addEventListener("submit", async (e) => {
+  // Firebase Register
+  async function registerFirebase(username,password){
+    try{
+      const email=`${username}@luxchat.local`;
+      const userCred=await createUserWithEmailAndPassword(auth,email,password);
+      await set(ref(db,'users/'+userCred.user.uid),{username,createdAt:Date.now()});
+      toast('Registered successfully');
+      return true;
+    }catch(e){toast(e.message);return false;}
+  }
+
+  // Firebase Login
+  async function loginFirebase(username,password){
+    try{
+      const email=`${username}@luxchat.local`;
+      await signInWithEmailAndPassword(auth,email,password);
+      localStorage.setItem('luxchat_user',username);
+      enterApp(username);
+      toast('Login success');
+      return true;
+    }catch(e){toast(e.message);return false;}
+  }
+
+  qs('#registerForm').onsubmit=async e=>{
     e.preventDefault();
-    const username = document.querySelector("#loginUser").value.trim();
-    const password = document.querySelector("#loginPass").value;
-    if (await firebaseLogin(username, password)) {
-      location.reload(); // reinit session
-    }
-  });
+    const u=qs('#regUser').value.trim();
+    const p=qs('#regPass').value;
+    if(await registerFirebase(u,p)) qs('[data-tab=\"login\"]').click();
+  };
+
+  qs('#loginForm').onsubmit=async e=>{
+    e.preventDefault();
+    const u=qs('#loginUser').value.trim();
+    const p=qs('#loginPass').value;
+    await loginFirebase(u,p);
+  };
+
+  function enterApp(u){
+    state.user=u;
+    qs('#auth').classList.add('hidden');
+    qs('#app').classList.remove('hidden');
+    renderRooms();
+    Notification.requestPermission();
+  }
+
+  function renderRooms(){
+    const wrap=qs('#threads');wrap.innerHTML='';
+    const rooms=JSON.parse(localStorage.getItem('lux_rooms_'+state.user)||'[]');
+    if(rooms.length===0){wrap.innerHTML='<div style=\"padding:10px;color:#aaa\">No chats yet</div>';}
+    rooms.forEach(r=>{
+      const el=document.createElement('div');
+      el.className='thread';
+      el.innerHTML=`<div class='avatar'>💬</div><div class='meta'><div class='title'>${r}</div></div>`;
+      el.onclick=()=>openRoom(r);
+      wrap.appendChild(el);
+    });
+  }
+
+  qs('#addRoom').onclick=()=>{
+    const r=qs('#newRoom').value.trim();
+    if(!r)return;
+    let rooms=JSON.parse(localStorage.getItem('lux_rooms_'+state.user)||'[]');
+    if(!rooms.includes(r))rooms.push(r);
+    localStorage.setItem('lux_rooms_'+state.user,JSON.stringify(rooms));
+    qs('#newRoom').value='';
+    renderRooms();openRoom(r);
+  };
+
+  function openRoom(r){
+    state.currentRoom=r;
+    qs('#roomTitle').textContent=r;
+    renderChat();
+  }
+
+  function renderChat(){
+    const box=qs('#chat');box.innerHTML='';
+    const msgs=JSON.parse(localStorage.getItem('lux_msgs_'+state.user+'_'+state.currentRoom)||'[]');
+    msgs.forEach(m=>{
+      const div=document.createElement('div');div.className='msg'+(m.me?' me':'');
+      div.innerHTML=`${m.text}<div class='time'>${new Date(m.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.me?'<span class=\"ticks '+(m.read?'read':'')+'\">✓✓</span>':''}</div>`;
+      box.appendChild(div);
+    });
+    box.scrollTop=box.scrollHeight;
+  }
+
+  qs('#send').onclick=sendMessage;
+  qs('#message').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sendMessage();}}
+
+  function sendMessage(){
+    const text=qs('#message').value.trim();
+    if(!text||!state.currentRoom)return;
+    const msg={text,ts:Date.now(),me:true};
+    const key='lux_msgs_'+state.user+'_'+state.currentRoom;
+    const msgs=JSON.parse(localStorage.getItem(key)||'[]');
+    msgs.push(msg);localStorage.setItem(key,JSON.stringify(msgs));
+    renderChat();
+    qs('#message').value='';
+    if(bc)bc.postMessage({room:state.currentRoom,text,from:state.user});
+  }
+
+  if(bc)bc.onmessage=e=>{
+    const d=e.data;if(!d||d.from===state.user)return;
+    const key='lux_msgs_'+state.user+'_'+d.room;
+    const msgs=JSON.parse(localStorage.getItem(key)||'[]');
+    msgs.push({text:d.text,ts:Date.now(),me:false});
+    localStorage.setItem(key,JSON.stringify(msgs));
+    if(state.currentRoom===d.room)renderChat();
+    if(Notification.permission==='granted')new Notification('New message from '+d.from,{body:d.text});
+  };
+
+  // Logout
+  qs('#logoutBtn').onclick=()=>{
+    localStorage.removeItem('luxchat_user');
+    location.reload();
+  };
+
+  // Auto-login if session
+  const sess=localStorage.getItem('luxchat_user');
+  if(sess)enterApp(sess);
 </script>
-
-
 </body>
 </html>
