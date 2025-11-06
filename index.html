@@ -2,280 +2,347 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LuxChat - WhatsApp Style Secure Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LuxChat — WhatsApp‑Style (Firebase + Realtime + Push)</title>
   <style>
-    :root {
-      --bg: #0a1014;
-      --wa-green: #075E54;
-      --wa-accent: #128C7E;
-      --wa-chat: #DCF8C6;
-      --panel: #0e151aee;
-      --text: #e8edf1;
-      --muted: #9fb0c9;
-      --radius: 18px;
-      --blur: 14px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      font-family: "Segoe UI", Roboto, sans-serif;
-      background:#0b141a;
-      color:var(--text);
-      height:100vh;
-      display:grid;
-      place-items:center;
-    }
-    .shell{width:95vw;max-width:1100px;height:90vh;display:grid;place-items:center}
-    .card{background:var(--panel);border-radius:var(--radius);box-shadow:0 20px 60px #0008}
+    :root{--bg:#0b141a;--green:#075E54;--teal:#128C7E;--chat:#DCF8C6;--text:#e8edf1;--muted:#a9b7c6;--card:#0e151aee;--radius:18px}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:#0b141a;color:var(--text);display:grid;place-items:center}
+    .shell{width:min(1100px,95vw);height:min(92vh,860px)}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:0 24px 60px #0008;border:1px solid #0f2327}
+
     /* AUTH */
-    #auth{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px}
-    .hero{background:linear-gradient(135deg,#06453f,#075E54,#128C7E);border-radius:var(--radius);padding:30px;color:#fff;display:flex;flex-direction:column;justify-content:space-between}
+    #auth{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:18px}
+    .hero{border-radius:var(--radius);padding:28px;background:linear-gradient(135deg,#06453f,#075E54,#128C7E);color:white;display:flex;flex-direction:column;justify-content:space-between}
     .logo{font-weight:800;font-size:22px}
-    .auth-panel{display:grid;gap:12px;padding:24px}
-    .tabs{display:flex;background:#0b1222aa;border-radius:12px;padding:6px;border:1px solid #1e2e33}
-    .tab{flex:1;text-align:center;padding:10px;border-radius:10px;cursor:pointer;color:var(--muted)}
+    .auth-panel{padding:22px;display:grid;gap:12px}
+    .tabs{display:flex;background:#0b1214;border:1px solid #173035;border-radius:12px;padding:6px}
+    .tab{flex:1;text-align:center;padding:10px;border-radius:10px;color:#9fb0c9;cursor:pointer}
     .tab.active{background:#0e1b1e;color:var(--text)}
-    .field{display:grid;gap:6px}
+    .field{display:grid;gap:8px}
     .input{padding:12px;border-radius:12px;border:1px solid #173035;background:#0f1a1d;color:var(--text)}
-    .btn{padding:12px;border-radius:12px;border:none;cursor:pointer;background:#128C7E;color:#fff;font-weight:700}
-    .btn.secondary{background:#0b1214;border:1px solid #1e2e33;color:#d5def0}
-    .hidden{display:none!important}
+    .btn{padding:12px;border-radius:12px;border:0;background:var(--teal);color:white;font-weight:700;cursor:pointer}
+    .btn.secondary{background:#0f1a1d;border:1px solid #173035;color:#d9e6f2}
+    .row{display:flex;gap:10px;align-items:center}
+
     /* APP */
-    .app{display:grid;grid-template-columns:320px 1fr;gap:10px;height:100%}
+    .app{display:grid;grid-template-columns:320px 1fr;gap:12px;height:100%}
     .sidebar{display:grid;grid-template-rows:auto 52px 1fr auto;overflow:hidden;border-radius:var(--radius)}
-    .wa-topbar{background:#075E54;padding:14px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+    .topbar{background:var(--green);color:white;padding:14px;display:flex;align-items:center;justify-content:space-between}
     .search{padding:10px;background:#0b1214;border-bottom:1px solid #0f2327}
-    .search input{width:100%;padding:10px;border-radius:20px;border:none;background:#0f1a1d;color:var(--text)}
+    .search input{width:100%;padding:10px;border-radius:20px;border:0;background:#0f1a1d;color:var(--text)}
     .threads{overflow:auto;background:#0b1214}
-    .thread{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #0f2327;cursor:pointer}
+    .thread{display:flex;gap:10px;padding:12px;border-bottom:1px solid #0f2327;cursor:pointer}
     .thread:hover{background:#0f171a}
-    .avatar{width:40px;height:40px;border-radius:50%;background:#173035;display:grid;place-items:center;font-weight:700}
-    .meta .title{font-weight:700}
-    .meta .last{font-size:12px;color:#9fb0c9}
+    .avatar{width:40px;height:40px;border-radius:50%;background:#173035;display:grid;place-items:center}
     .room{display:grid;grid-template-rows:auto 1fr auto;border-radius:var(--radius);border:1px solid #0f2327;background:#0b1214}
-    .room-head{background:#075E54;padding:14px;display:flex;justify-content:space-between;align-items:center;color:#fff}
-    .chat{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"220\" height=\"220\" opacity=\"0.04\"><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"white\"/></svg>') repeat}
-    .msg{max-width:74%;padding:10px;border-radius:12px;background:#111b1e;color:#fff}
-    .msg.me{margin-left:auto;background:var(--wa-chat);color:#000}
-    .msg .time{font-size:11px;margin-top:4px;text-align:right;color:#9fb0c9}
-    .msg.me .time{color:#2c5a51}
-    .ticks{font-size:12px;margin-left:4px;opacity:.8}
+    .room-head{background:var(--green);color:white;padding:14px;display:flex;align-items:center;justify-content:space-between}
+    .chat{padding:14px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" opacity="0.04"><circle cx="20" cy="20" r="2" fill="white"/></svg>') repeat}
+    .msg{max-width:74%;padding:10px 12px;border-radius:12px;background:#111b1e}
+    .msg.me{margin-left:auto;background:var(--chat);color:#082b1f}
+    .time{font-size:11px;color:#a8b3c3;margin-top:4px;text-align:right}
+    .ticks{font-size:12px;margin-left:6px;opacity:.85}
     .ticks.read{color:#4ea3ff}
-    .composer{display:flex;gap:10px;padding:10px;background:#0f171a;border-top:1px solid #0f2327}
-    .composer input{flex:1;padding:12px;border-radius:22px;border:none;background:#0f1a1d;color:var(--text)}
-    .composer button{background:#128C7E;border:none;border-radius:22px;padding:12px 18px;color:#fff;cursor:pointer}
-    .toast{position:fixed;bottom:16px;right:16px;background:#101a33;padding:10px 14px;border-radius:8px;display:none}
+    .composer{display:flex;gap:10px;padding:10px;border-top:1px solid #0f2327;background:#0f171a}
+    .composer input{flex:1;padding:12px;border-radius:22px;border:0;background:#0f1a1d;color:var(--text)}
+    .composer button{border:0;background:var(--teal);color:white;border-radius:22px;padding:12px 16px;cursor:pointer}
+
+    .devbar{display:flex;gap:10px;padding:10px;background:#0e1b1e;border-top:1px dashed #173035}
+    .devbar input{flex:1;padding:10px;border-radius:10px;border:1px solid #173035;background:#0f1a1d;color:#dfe7fa}
+
+    .hidden{display:none!important}
+    @media(max-width:900px){.app{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-<div class="shell">
-  <section id="auth" class="card">
-    <div class="hero">
-      <div class="logo">LuxChat</div>
-      <div>
-        <p>Private WhatsApp-style chat with end-to-end encryption. Register or login to start.</p>
+  <div class="shell">
+    <!-- AUTH -->
+    <section id="auth" class="card">
+      <div class="hero">
+        <div class="logo">LuxChat</div>
+        <div>
+          <p>WhatsApp‑style chat with Firebase auth, realtime messages & push notifications. Messages can be E2E‑encrypted (room secret) and are stored in Firebase for sync.</p>
+          <p style="opacity:.9;font-size:12px">For dev only: push uses your FCM server key from the client (not secure for production).</p>
+        </div>
       </div>
-    </div>
-    <div class="auth-panel">
-      <div class="tabs">
-        <div class="tab active" data-tab="login">Login</div>
-        <div class="tab" data-tab="register">Register</div>
+      <div class="auth-panel">
+        <div class="tabs">
+          <div class="tab active" data-tab="login">Login</div>
+          <div class="tab" data-tab="register">Register</div>
+        </div>
+        <form id="loginForm">
+          <div class="field"><label>Username</label><input class="input" id="loginUser" required></div>
+          <div class="field"><label>Password</label><input class="input" id="loginPass" type="password" required></div>
+          <button class="btn" type="submit">Login</button>
+        </form>
+        <form id="registerForm" class="hidden">
+          <div class="field"><label>Username</label><input class="input" id="regUser" required></div>
+          <div class="field"><label>Password</label><input class="input" id="regPass" type="password" required></div>
+          <button class="btn" type="submit">Create Account</button>
+        </form>
       </div>
-      <form id="loginForm">
-        <div class="field"><label>Username</label><input class="input" id="loginUser" required></div>
-        <div class="field"><label>Password</label><input class="input" id="loginPass" type="password" required></div>
-        <button class="btn" type="submit">Login</button>
-      </form>
-      <form id="registerForm" class="hidden">
-        <div class="field"><label>Username</label><input class="input" id="regUser" required></div>
-        <div class="field"><label>Password</label><input class="input" id="regPass" type="password" required></div>
-        <button class="btn" type="submit">Register</button>
-      </form>
-    </div>
-  </section>
+    </section>
 
-  <section id="app" class="app hidden">
-    <aside class="sidebar card">
-      <div class="wa-topbar">
-        <div>LuxChat</div><div>⋮</div>
-      </div>
-      <div class="search"><input id="search" placeholder="Search or start new chat..."></div>
-      <div class="threads" id="threads"></div>
-      <div style="padding:10px">
-        <input id="newRoom" class="input" placeholder="Room name" />
-        <button id="addRoom" class="btn secondary">New</button>
-      </div>
-      <button id="logoutBtn" class="btn secondary" style="margin:10px">Logout</button>
-    </aside>
+    <!-- APP -->
+    <section id="app" class="app hidden">
+      <aside class="sidebar card">
+        <div class="topbar"><div>LuxChat</div><div>⋮</div></div>
+        <div class="search"><input id="search" placeholder="Search or start new chat…"></div>
+        <div id="threads" class="threads"></div>
+        <div class="row" style="padding:10px">
+          <input id="newRoom" class="input" placeholder="Username to chat with" />
+          <button id="startChat" class="btn secondary">Chat</button>
+        </div>
+        <button id="logoutBtn" class="btn secondary" style="margin:10px">Logout</button>
+      </aside>
+      <main class="room card">
+        <div class="room-head"><div id="roomTitle">No chat selected</div><div id="e2e">Secret: off</div></div>
+        <div id="chat" class="chat"><div style="opacity:.8">Welcome 👋 Select a user to chat.</div></div>
+        <div class="composer">
+          <input id="message" placeholder="Type a message" maxlength="600" />
+          <button id="send">➤</button>
+        </div>
+        <div class="devbar">
+          <input id="secret" placeholder="(Optional) room secret for E2E at-rest" />
+          <button id="saveSecret" class="btn secondary">Set Secret</button>
+        </div>
+        <div class="devbar">
+          <input id="serverKey" placeholder="DEV ONLY: paste your FCM SERVER KEY here" />
+          <button id="saveKey" class="btn secondary">Save Server Key (local)</button>
+        </div>
+      </main>
+    </section>
+  </div>
 
-    <main id="roomPanel" class="room card">
-      <div class="room-head"><div id="roomTitle">No chat selected</div><div id="statusBadge">Offline</div></div>
-      <div id="chat" class="chat"><div class="msg">Welcome to LuxChat!</div></div>
-      <div class="composer">
-        <input id="message" placeholder="Type a message" maxlength="400"/>
-        <button id="send">➤</button>
-      </div>
-    </main>
-  </section>
-  <div class="toast" id="toast"></div>
-</div>
+  <!-- ====== APP SCRIPT (Firebase v10 Modular) ====== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, set, get, child, onChildAdded, push, serverTimestamp, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 
-<!-- Firebase & App Script -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAaxuleENvEkCeyGT-fpbD2MucqYqrTVKs",
-    authDomain: "chating-37001.firebaseapp.com",
-    databaseURL: "https://chating-37001-default-rtdb.firebaseio.com",
-    projectId: "chating-37001",
-    storageBucket: "chating-37001.firebasestorage.app",
-    messagingSenderId: "34963823190",
-    appId: "1:34963823190:web:1a799357de4b552564b9f7",
-    measurementId: "G-FY3X1671VP"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth(app);
-
-  const qs = (s)=>document.querySelector(s);
-  const toast=(t)=>{const el=qs('#toast');el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',2000)}
-
-  const state={user:null,currentRoom:null};
-  const bc=('BroadcastChannel' in self)?new BroadcastChannel('luxchat'):null;
-
-  // Tabs
-  document.querySelectorAll('.tab').forEach(tab=>{
-    tab.onclick=()=>{
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      qs('#loginForm').classList.toggle('hidden',tab.dataset.tab!=='login');
-      qs('#registerForm').classList.toggle('hidden',tab.dataset.tab!=='register');
+    // ---- Your Firebase project ----
+    const firebaseConfig = {
+      apiKey: "AIzaSyAaxuleENvEkCeyGT-fpbD2MucqYqrTVKs",
+      authDomain: "chating-37001.firebaseapp.com",
+      databaseURL: "https://chating-37001-default-rtdb.firebaseio.com",
+      projectId: "chating-37001",
+      storageBucket: "chating-37001.firebasestorage.app",
+      messagingSenderId: "34963823190",
+      appId: "1:34963823190:web:1a799357de4b552564b9f7",
+      measurementId: "G-FY3X1671VP"
     };
-  });
 
-  // Firebase Register
-  async function registerFirebase(username,password){
-    try{
-      const email=`${username}@luxchat.local`;
-      const userCred=await createUserWithEmailAndPassword(auth,email,password);
-      await set(ref(db,'users/'+userCred.user.uid),{username,createdAt:Date.now()});
-      toast('Registered successfully');
-      return true;
-    }catch(e){toast(e.message);return false;}
-  }
+    // ---- Your Web Push VAPID key (from you) ----
+    const VAPID_KEY = "BJ4dZBUp-vZeKUwQW5JW4X0QmQRlGwmMriZfJaYjs23_6_vzpnO_HlGzhicfVE71hAgEHRaQ2st_XslgQZ6txIc";
 
-  // Firebase Login
-  async function loginFirebase(username,password){
-    try{
-      const email=`${username}@luxchat.local`;
-      await signInWithEmailAndPassword(auth,email,password);
-      localStorage.setItem('luxchat_user',username);
-      enterApp(username);
-      toast('Login success');
-      return true;
-    }catch(e){toast(e.message);return false;}
-  }
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    const messagingSupported = await isSupported();
+    const messaging = messagingSupported ? getMessaging(app) : null;
 
-  qs('#registerForm').onsubmit=async e=>{
-    e.preventDefault();
-    const u=qs('#regUser').value.trim();
-    const p=qs('#regPass').value;
-    if(await registerFirebase(u,p)) qs('[data-tab=\"login\"]').click();
-  };
+    // --- UI helpers ---
+    const qs = s=>document.querySelector(s);
+    const toast = (t)=>{ console.log(t); };
 
-  qs('#loginForm').onsubmit=async e=>{
-    e.preventDefault();
-    const u=qs('#loginUser').value.trim();
-    const p=qs('#loginPass').value;
-    await loginFirebase(u,p);
-  };
-
-  function enterApp(u){
-    state.user=u;
-    qs('#auth').classList.add('hidden');
-    qs('#app').classList.remove('hidden');
-    renderRooms();
-    Notification.requestPermission();
-  }
-
-  function renderRooms(){
-    const wrap=qs('#threads');wrap.innerHTML='';
-    const rooms=JSON.parse(localStorage.getItem('lux_rooms_'+state.user)||'[]');
-    if(rooms.length===0){wrap.innerHTML='<div style=\"padding:10px;color:#aaa\">No chats yet</div>';}
-    rooms.forEach(r=>{
-      const el=document.createElement('div');
-      el.className='thread';
-      el.innerHTML=`<div class='avatar'>💬</div><div class='meta'><div class='title'>${r}</div></div>`;
-      el.onclick=()=>openRoom(r);
-      wrap.appendChild(el);
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab=>{
+      tab.onclick=()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        tab.classList.add('active');
+        qs('#loginForm').classList.toggle('hidden',tab.dataset.tab!=='login');
+        qs('#registerForm').classList.toggle('hidden',tab.dataset.tab!=='register');
+      }
     });
-  }
 
-  qs('#addRoom').onclick=()=>{
-    const r=qs('#newRoom').value.trim();
-    if(!r)return;
-    let rooms=JSON.parse(localStorage.getItem('lux_rooms_'+state.user)||'[]');
-    if(!rooms.includes(r))rooms.push(r);
-    localStorage.setItem('lux_rooms_'+state.user,JSON.stringify(rooms));
-    qs('#newRoom').value='';
-    renderRooms();openRoom(r);
-  };
-
-  function openRoom(r){
-    state.currentRoom=r;
-    qs('#roomTitle').textContent=r;
-    renderChat();
-  }
-
-  function renderChat(){
-    const box=qs('#chat');box.innerHTML='';
-    const msgs=JSON.parse(localStorage.getItem('lux_msgs_'+state.user+'_'+state.currentRoom)||'[]');
-    msgs.forEach(m=>{
-      const div=document.createElement('div');div.className='msg'+(m.me?' me':'');
-      div.innerHTML=`${m.text}<div class='time'>${new Date(m.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.me?'<span class=\"ticks '+(m.read?'read':'')+'\">✓✓</span>':''}</div>`;
-      box.appendChild(div);
+    // Auth
+    qs('#registerForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const u = qs('#regUser').value.trim();
+      const p = qs('#regPass').value;
+      const email = `${u}@luxchat.local`;
+      await createUserWithEmailAndPassword(auth,email,p);
+      const {uid} = auth.currentUser;
+      await set(ref(db,`users/${uid}`),{ username:u, createdAt: Date.now() });
+      await setupNotifications();
+      alert('Registered! Please log in.');
+      document.querySelector('[data-tab="login"]').click();
     });
-    box.scrollTop=box.scrollHeight;
-  }
 
-  qs('#send').onclick=sendMessage;
-  qs('#message').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sendMessage();}}
+    qs('#loginForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const u = qs('#loginUser').value.trim();
+      const p = qs('#loginPass').value;
+      const email = `${u}@luxchat.local`;
+      await signInWithEmailAndPassword(auth,email,p);
+      await setupNotifications();
+    });
 
-  function sendMessage(){
-    const text=qs('#message').value.trim();
-    if(!text||!state.currentRoom)return;
-    const msg={text,ts:Date.now(),me:true};
-    const key='lux_msgs_'+state.user+'_'+state.currentRoom;
-    const msgs=JSON.parse(localStorage.getItem(key)||'[]');
-    msgs.push(msg);localStorage.setItem(key,JSON.stringify(msgs));
-    renderChat();
-    qs('#message').value='';
-    if(bc)bc.postMessage({room:state.currentRoom,text,from:state.user});
-  }
+    onAuthStateChanged(auth, async user=>{
+      if(user){ qs('#auth').classList.add('hidden'); qs('#app').classList.remove('hidden');
+        await loadThreads();
+      } else { qs('#app').classList.add('hidden'); qs('#auth').classList.remove('hidden'); }
+    });
 
-  if(bc)bc.onmessage=e=>{
-    const d=e.data;if(!d||d.from===state.user)return;
-    const key='lux_msgs_'+state.user+'_'+d.room;
-    const msgs=JSON.parse(localStorage.getItem(key)||'[]');
-    msgs.push({text:d.text,ts:Date.now(),me:false});
-    localStorage.setItem(key,JSON.stringify(msgs));
-    if(state.currentRoom===d.room)renderChat();
-    if(Notification.permission==='granted')new Notification('New message from '+d.from,{body:d.text});
-  };
+    // ---- Notifications (token save) ----
+    async function setupNotifications(){
+      if(!messaging) return;
+      const perm = await Notification.requestPermission();
+      if(perm!=="granted") return;
+      try{
+        const token = await getToken(messaging,{ vapidKey: VAPID_KEY, serviceWorkerRegistration: await regSW() });
+        const uid = auth.currentUser?.uid; if(uid) await set(ref(db,`users/${uid}/token`), token);
+        onMessage(messaging, payload=>{
+          const {title,body} = payload.notification||{};
+          if(title||body) new Notification(title||'LuxChat', { body: body||'' });
+        });
+      }catch(err){ console.warn('FCM token error', err); }
+    }
 
-  // Logout
-  qs('#logoutBtn').onclick=()=>{
-    localStorage.removeItem('luxchat_user');
-    location.reload();
-  };
+    // --- Service worker registration ---
+    async function regSW(){
+      // We create the SW file dynamically on first load (dev convenience)
+      const swCode = `importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');\nimportScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');\nfirebase.initializeApp(${JSON.stringify({ apiKey: firebaseConfig.apiKey, authDomain: firebaseConfig.authDomain, projectId: firebaseConfig.projectId, messagingSenderId: firebaseConfig.messagingSenderId, appId: firebaseConfig.appId })});\nconst messaging = firebase.messaging();\nself.addEventListener('push', e=>{});\nmessaging.onBackgroundMessage((payload)=>{ const n=payload.notification||{}; self.registration.showNotification(n.title||'LuxChat',{ body:n.body||'', icon:'/icon.png' }); });`;
+      const blob = new Blob([swCode], {type:'text/javascript'});
+      const url = URL.createObjectURL(blob);
+      // name must look like a path; we can use scope '/'
+      const reg = await navigator.serviceWorker.register(url, { scope: '/' });
+      return reg;
+    }
 
-  // Auto-login if session
-  const sess=localStorage.getItem('luxchat_user');
-  if(sess)enterApp(sess);
-</script>
+    // ---- Threads (chat partners) ----
+    async function loadThreads(){
+      const me = auth.currentUser; if(!me) return;
+      const wrap = qs('#threads'); wrap.innerHTML='';
+      // Show last 20 users (simple directory)
+      const usersSnap = await get(ref(db,'users'));
+      usersSnap.forEach(ch=>{
+        const u = ch.val(); if(ch.key===me.uid) return;
+        const el = document.createElement('div'); el.className='thread';
+        el.innerHTML = `<div class="avatar">👤</div><div><div style="font-weight:700">${u.username}</div><div class="muted">Tap to chat</div></div>`;
+        el.onclick = ()=> startChatWithUid(ch.key, u.username);
+        wrap.appendChild(el);
+      });
+    }
+
+    qs('#startChat').onclick = async ()=>{
+      const targetName = qs('#newRoom').value.trim(); if(!targetName) return;
+      const usersSnap = await get(ref(db,'users'));
+      let tgt=null, uid=null; usersSnap.forEach(ch=>{ if(ch.val().username===targetName){ tgt=ch.val(); uid=ch.key; } });
+      if(!uid){ alert('User not found'); return; }
+      startChatWithUid(uid, targetName);
+    };
+
+    function chatIdFor(u1,u2){ return [u1,u2].sort().join('_'); }
+
+    // E2E secret handling (at-rest encryption)
+    const enc = new TextEncoder(); const dec = new TextDecoder();
+    async function deriveKey(secret, salt){
+      const base = await crypto.subtle.importKey('raw', enc.encode(secret), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey({name:'PBKDF2', salt:enc.encode(salt), iterations:120000, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+    }
+    async function encryptText(key, txt){ const iv=crypto.getRandomValues(new Uint8Array(12)); const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, enc.encode(txt)); return {iv:Array.from(iv), data:btoa(String.fromCharCode(...new Uint8Array(ct)))} }
+    async function decryptText(key, p){ const iv=new Uint8Array(p.iv); const buf=Uint8Array.from(atob(p.data),c=>c.charCodeAt(0)); const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv}, key, buf); return dec.decode(pt); }
+
+    let current = { peerUid:null, peerName:null, chatId:null, key:null };
+
+    async function startChatWithUid(peerUid, peerName){
+      const me = auth.currentUser; if(!me) return;
+      current.peerUid = peerUid; current.peerName = peerName; current.chatId = chatIdFor(me.uid, peerUid);
+      qs('#roomTitle').textContent = peerName;
+      qs('#chat').innerHTML='';
+      attachListener();
+    }
+
+    async function setSecret(){
+      const s = qs('#secret').value.trim();
+      if(!s){ current.key=null; qs('#e2e').textContent='Secret: off'; return; }
+      current.key = await deriveKey(s, current.chatId||'global');
+      qs('#e2e').textContent='Secret: on';
+    }
+    qs('#saveSecret').onclick = setSecret;
+
+    function renderMsg(m){
+      const div=document.createElement('div');
+      const me = auth.currentUser?.uid; const mine = m.from===me;
+      div.className = 'msg' + (mine?' me':'');
+      const ticks = mine? `<span class="ticks ${m.read?'read':''}">✓✓</span>` : '';
+      div.innerHTML = `${(m.plaintext||m.cipher? (m.plaintext||'🔐') : '')}<div class="time">${new Date(m.time||Date.now()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} ${ticks}</div>`;
+      qs('#chat').appendChild(div); qs('#chat').scrollTop = qs('#chat').scrollHeight;
+    }
+
+    let detach = null;
+    function attachListener(){
+      if(detach) detach();
+      const me = auth.currentUser; if(!me || !current.chatId) return;
+      const path = ref(db, `chats/${current.chatId}/messages`);
+      const off = onChildAdded(path, async snap=>{
+        const m = snap.val();
+        // Decrypt if possible
+        if(m.cipher && current.key){ try{ m.plaintext = await decryptText(current.key, m.cipher); }catch{ m.plaintext='🔐 (wrong secret)'; } }
+        renderMsg(m);
+        // mark delivered/read (simple)
+        if(m.to===me.uid){ update(snap.ref, { delivered: serverTimestamp(), read: document.hasFocus()? serverTimestamp(): m.read||null }); }
+      });
+      detach = off;
+    }
+
+    // Send message + DEV push
+    qs('#send').onclick = send;
+    qs('#message').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); send(); }});
+
+    async function send(){
+      const text = qs('#message').value.trim(); if(!text||!current.chatId) return;
+      const me = auth.currentUser; if(!me) return;
+
+      // find peer token
+      const peerTokenSnap = await get(child(ref(db), `users/${current.peerUid}/token`));
+      const peerToken = peerTokenSnap.exists()? peerTokenSnap.val(): null;
+
+      let payload = { plaintext: text };
+      if(current.key){ payload.cipher = await encryptText(current.key, text); payload.plaintext = null; }
+
+      const msg = { from: me.uid, to: current.peerUid, time: Date.now(), ...payload };
+      await push(ref(db, `chats/${current.chatId}/messages`), msg);
+      qs('#message').value='';
+
+      // DEV push using server key from local input (Option A)
+      const serverKey = localStorage.getItem('lux_fcm_server_key')||'';
+      if(serverKey && peerToken){
+        try{
+          await fetch('https://fcm.googleapis.com/fcm/send', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', 'Authorization': 'key='+serverKey },
+            body: JSON.stringify({ to: peerToken, notification: { title: 'New message from LuxChat', body: text } })
+          });
+        }catch(err){ console.warn('FCM dev send failed', err); }
+      }
+    }
+
+    // Save server key locally (dev)
+    qs('#saveKey').onclick = ()=>{ const k=qs('#serverKey').value.trim(); if(k){ localStorage.setItem('lux_fcm_server_key', k); alert('Saved locally.'); }}
+
+  </script>
 </body>
 </html>
+
+<!-- ===== Create a file named: firebase-messaging-sw.js  (if you deploy to a real host) =====
+// If you are not using the dynamic SW creation in index.html, save this as /firebase-messaging-sw.js
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+firebase.initializeApp({
+  apiKey: 'AIzaSyAaxuleENvEkCeyGT-fpbD2MucqYqrTVKs',
+  authDomain: 'chating-37001.firebaseapp.com',
+  projectId: 'chating-37001',
+  messagingSenderId: '34963823190',
+  appId: '1:34963823190:web:1a799357de4b552564b9f7',
+});
+const messaging = firebase.messaging();
+messaging.onBackgroundMessage((payload)=>{
+  const n = payload.notification||{};
+  self.registration.showNotification(n.title||'LuxChat', { body:n.body||'', icon:'/icon.png' });
+});
+-->
